@@ -669,6 +669,9 @@ public class CanonMakernoteDirectory extends Directory
     @Override
     public void setObjectArray(int tagType, @NotNull Object array)
     {
+	if (!array.getClass().isArray())
+	    throw new IllegalArgumentException("not an array");
+
         // TODO is there some way to drop out 'null' or 'zero' values that are present in the array to reduce the noise?
 
         // Certain Canon tags contain arrays of values that we split into 'fake' tags as each
@@ -677,27 +680,19 @@ public class CanonMakernoteDirectory extends Directory
         // Otherwise just add as usual.
         switch (tagType) {
             case TAG_CAMERA_SETTINGS_ARRAY: {
-                int[] ints = (int[])array;
-                for (int i = 0; i < ints.length; i++)
-                    setInt(CameraSettings.OFFSET + i, ints[i]);
-                break;
+        	setIntArray(tagType, CameraSettings.OFFSET, array);
+        	break;
             }
             case TAG_FOCAL_LENGTH_ARRAY: {
-                int[] ints = (int[])array;
-                for (int i = 0; i < ints.length; i++)
-                    setInt(FocalLength.OFFSET + i, ints[i]);
+        	setIntArray(tagType, FocalLength.OFFSET, array);
                 break;
             }
             case TAG_SHOT_INFO_ARRAY: {
-                int[] ints = (int[])array;
-                for (int i = 0; i < ints.length; i++)
-                    setInt(ShotInfo.OFFSET + i, ints[i]);
+        	setIntArray(tagType, ShotInfo.OFFSET, array);
                 break;
             }
             case TAG_PANORAMA_ARRAY: {
-                int[] ints = (int[])array;
-                for (int i = 0; i < ints.length; i++)
-                    setInt(Panorama.OFFSET + i, ints[i]);
+        	setIntArray(tagType, Panorama.OFFSET, array);
                 break;
             }
             // TODO the interpretation of the custom functions tag depends upon the camera model
@@ -708,9 +703,7 @@ public class CanonMakernoteDirectory extends Directory
 //                    setInt(subTagTypeBase + i + 1, ints[i] & 0x0F);
 //                break;
             case TAG_AF_INFO_ARRAY: {
-                int[] ints = (int[])array;
-                for (int i = 0; i < ints.length; i++)
-                    setInt(AFInfo.OFFSET + i, ints[i]);
+        	setIntArray(tagType, AFInfo.OFFSET, array);
                 break;
             }
             default: {
@@ -719,5 +712,28 @@ public class CanonMakernoteDirectory extends Directory
                 break;
             }
         }
+    }
+
+    /**
+     * @param tagType
+     * @param offset TODO
+     * @param array
+     */
+    private void setIntArray(int tagType, int offset, Object array) {
+	if (array.getClass().getComponentType() == byte.class) {
+	    byte[] bytes = (byte[])array;
+	    for (int i = 0; i < bytes.length; i++)
+		setInt(offset + i, bytes[i]);
+	} else if (array.getClass().getComponentType() == short.class) {
+	    short[] shorts = (short[])array;
+	    for (int i = 0; i < shorts.length; i++)
+		setInt(offset + i, shorts[i]);
+	} else if (array.getClass().getComponentType() == int.class) {
+	    int[] ints = (int[])array;
+	    for (int i = 0; i < ints.length; i++)
+		setInt(offset + i, ints[i]);
+	} else {
+	    super.setObjectArray(tagType, array);
+	}
     }
 }
